@@ -1,7 +1,6 @@
 from sys import argv, getsizeof
 from random import randint
 from datetime import datetime
-from hashlib import sha256
 
 from functions import encrypt, loadFiles, saveFiles, decrypt
 
@@ -25,14 +24,11 @@ if argv[2] == 'encrypt':
     with open(fileName + '.ENCRYPTED', 'wb') as f:
         f.write(res[0])
 
-    # Store IV, padding and name
+    # Store nonce, padding and name
     files[fileName] = {
-        'IV': res[1],
-        'padding': res[2],
         'name': argv[3].rpartition('/')[2],
         'date': datetime.now().strftime('%m/%d/%Y, %H:%M:%S'),
-        'key': res[3],
-        'hash': sha256(res[0]).hexdigest()
+        'key': res[1]
     }
 
     # Encrypt and store files metadata
@@ -50,15 +46,9 @@ elif argv[2] == 'decrypt':
 
     # Open the file, decrypt it and store it to the new file
     with open(argv[3], 'rb') as f:
-        content = f.read() 
-
-        if sha256(content).hexdigest() == info['hash']:
-            with open(info['name'], 'wb') as f2:
-                f2.write(decrypt(content, bytes(info['key'], 'ISO-8859-1'), info['IV'], info['padding']))
-        else:
-            print('Hash is not matching')
-            exit()
-    print(f"Successfuly decrypted {argv[3]} as {info['name']}")
+        with open(info['name'], 'wb') as f2:
+            f2.write(decrypt(f.read(), info['key'].encode('ISO-8859-1')))
+        print(f"Successfuly decrypted {argv[3]} as {info['name']}")
 
 elif argv[2] == 'list': 
     maxLength = 0
